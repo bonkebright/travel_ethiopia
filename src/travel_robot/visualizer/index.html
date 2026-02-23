@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Travelling Ethiopia – BFS</title>
+
+<style>
+body{
+margin:0;
+background:#0f172a;
+color:white;
+font-family:Arial;
+}
+
+header{
+padding:15px;
+background:#1e293b;
+font-size:20px;
+font-weight:bold;
+}
+
+.controls{
+padding:10px;
+background:#111827;
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+align-items:center;
+}
+
+select,button{
+padding:6px;
+font-size:14px;
+}
+
+canvas{
+background:#0a0f1a;
+display:block;
+}
+</style>
+</head>
+<body>
+
+<header>
+🇪🇹Travel Ethiopia Visualizer
+</header>
+
+<div class="controls">
+Start:
+<select id="start"></select>
+
+Goal:
+<select id="goal"></select>
+
+<button onclick="run()">Run BFS</button>
+<button onclick="animateSearch()">Animate BFS</button>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+
+/* ==========================
+   GRAPH 
+========================== */
+const ADJ = {
+"Addis Ababa":["Ambo","Adama","Debre Birhan"],
+"Ambo":["Addis Ababa","Nekemte","Wolkite"],
+"Adama":["Addis Ababa","Batu","Assella","Matahara"],
+"Nekemte":["Ambo","Gimbi","Bedelle"],
+"Gimbi":["Nekemte","Dembi Dollo"],
+"Dembi Dollo":["Gimbi","Gambella"],
+"Gambella":["Dembi Dollo","Gore"],
+"Gore":["Gambella","Tepi","Bedelle"],
+"Bedelle":["Gore","Nekemte","Jimma"],
+"Jimma":["Bedelle","Wolkite","Bonga"],
+"Wolkite":["Ambo","Jimma","Worabe"],
+"Buta Jirra":["Batu","Worabe"],
+"Batu":["Adama","Buta Jirra","Shashemene"],
+"Assella":["Adama","Assasa"],
+"Matahara":["Adama","Awash"],
+"Awash":["Matahara","Chiro"],
+"Chiro":["Awash","Dire Dawa"],
+"Dire Dawa":["Chiro","Harar"],
+"Harar":["Dire Dawa","Babile"],
+"Babile":["Harar","Jigjiga"],
+"Jigjiga":["Babile","Dega Habur"],
+"Dega Habur":["Jigjiga","Kebri Dehar"],
+"Kebri Dehar":["Dega Habur","Gode","Werder"],
+"Werder":["Kebri Dehar"],
+"Gode":["Kebri Dehar","Sof Oumer"],
+"Tepi":["Gore","Mezan Teferi","Bonga"],
+"Bonga":["Tepi","Jimma","Dawro"],
+"Mezan Teferi":["Tepi"],
+"Dawro":["Bonga","Wolaita Sodo"],
+"Wolaita Sodo":["Dawro","Hossana","Arba Minch"],
+"Hossana":["Wolaita Sodo","Worabe"],
+"Worabe":["Hossana","Wolkite","Buta Jirra"],
+"Arba Minch":["Wolaita Sodo","Konso"],
+"Konso":["Arba Minch","Yabello"],
+"Yabello":["Konso","Moyale","Bule Hora"],
+"Bule Hora":["Yabello","Dilla"],
+"Dilla":["Bule Hora","Hawassa"],
+"Hawassa":["Dilla","Shashemene"],
+"Shashemene":["Hawassa","Batu","Dodolla"],
+"Dodolla":["Shashemene","Assasa","Bale"],
+"Assasa":["Dodolla","Assella"],
+"Bale":["Dodolla","Goba","Sof Oumer","Liben"],
+"Goba":["Bale","Sof Oumer","Dega Habur"],
+"Sof Oumer":["Goba","Bale","Gode"],
+"Liben":["Bale"],
+"Moyale":["Yabello"]
+};
+
+/* ==========================
+   GRID POSITIONS (FIXED GRID)
+========================== */
+
+const POS = {
+
+"Addis Ababa":[6,2],
+"Ambo":[4,2],
+"Adama":[7,3],
+"Nekemte":[3,2],
+"Wolkite":[4,3],
+"Batu":[6,4],
+"Debre Birhan":[7,1],
+"Matahara":[8,2],
+"Assella":[8,3],
+
+"Gimbi":[2,2],
+"Dembi Dollo":[1,3],
+"Gambella":[0,3],
+"Gore":[2,4],
+"Bedelle":[3,3],
+"Jimma":[4,4],
+
+"Bonga":[4,5],
+"Tepi":[3,5],
+"Mezan Teferi":[2,5],
+"Dawro":[4,6],
+"Wolaita Sodo":[5,6],
+
+"Hossana":[5,5],
+"Worabe":[5,4],
+
+"Arba Minch":[5,7],
+"Konso":[5,8],
+"Yabello":[6,9],
+"Bule Hora":[6,8],
+"Dilla":[6,7],
+"Hawassa":[7,6],
+"Shashemene":[7,5],
+"Dodolla":[8,5],
+"Assasa":[8,4],
+
+"Bale":[9,6],
+"Goba":[10,6],
+"Sof Oumer":[10,7],
+"Liben":[9,8],
+
+"Awash":[9,2],
+"Chiro":[10,2],
+"Dire Dawa":[11,2],
+"Harar":[12,3],
+"Babile":[12,4],
+"Jigjiga":[13,4],
+"Dega Habur":[12,5],
+"Kebri Dehar":[12,6],
+"Werder":[13,7],
+
+"Gode":[11,7],
+
+"Moyale":[6,10]
+};
+
+/* ==========================
+   CANVAS
+========================== */
+
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+function resize(){
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight-150;
+draw();
+}
+
+window.addEventListener("resize",resize);
+resize();
+
+/* ==========================
+   DRAW FUNCTION
+========================== */
+
+function draw(path=[],source="",goal=""){
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+let scale=60;
+
+/* Draw edges */
+for(let city in ADJ){
+if(!POS[city]) continue;
+let [x1,y1]=POS[city];
+for(let nb of ADJ[city]){
+if(!POS[nb]) continue;
+let [x2,y2]=POS[nb];
+
+ctx.beginPath();
+ctx.strokeStyle="#334155";
+ctx.lineWidth=2;
+ctx.moveTo(x1*scale,y1*scale);
+ctx.lineTo(x2*scale,y2*scale);
+ctx.stroke();
+}
+}
+
+/* Draw nodes */
+for(let city in POS){
+
+let [x,y]=POS[city];
+let cx=x*scale;
+let cy=y*scale;
+
+ctx.beginPath();
+ctx.arc(cx,cy,18,0,Math.PI*2);
+
+if(city===source){
+ctx.fillStyle="#10b981"; // source
+}
+else if(city===goal){
+ctx.fillStyle="#ef4444"; // goal
+}
+else if(path.includes(city)){
+ctx.fillStyle="#f59e0b"; // path
+}
+else{
+ctx.fillStyle="#1e293b";
+}
+
+ctx.fill();
+ctx.strokeStyle="white";
+ctx.stroke();
+
+ctx.fillStyle="white";
+ctx.font="11px Arial";
+ctx.textAlign="center";
+ctx.fillText(city,cx,cy-25);
+}
+
+}
+
+/* ==========================
+   BFS
+========================== */
+
+function bfs(start,goal){
+
+let queue=[[start]];
+let visited=new Set([start]);
+
+while(queue.length>0){
+
+let path=queue.shift();
+let node=path[path.length-1];
+
+if(node===goal){
+return path;
+}
+
+for(let nb of (ADJ[node]||[])){
+if(!visited.has(nb)){
+visited.add(nb);
+queue.push([...path,nb]);
+}
+}
+}
+
+return null;
+}
+
+/* ==========================
+   BUTTONS
+========================== */
+
+function run(){
+let s=document.getElementById("start").value;
+let g=document.getElementById("goal").value;
+
+let path=bfs(s,g);
+if(path){
+draw(path,s,g);
+}
+else{
+alert("No path found");
+}
+}
+
+/* Animation */
+
+function animateSearch(){
+
+let s=document.getElementById("start").value;
+let g=document.getElementById("goal").value;
+
+let queue=[[s]];
+let visited=new Set([s]);
+
+let interval=setInterval(()=>{
+
+if(queue.length===0){
+clearInterval(interval);
+return;
+}
+
+let path=queue.shift();
+let node=path[path.length-1];
+
+draw(path,s,g);
+
+if(node===g){
+clearInterval(interval);
+return;
+}
+
+for(let nb of (ADJ[node]||[])){
+if(!visited.has(nb)){
+visited.add(nb);
+queue.push([...path,nb]);
+}
+}
+
+},800);
+
+}
+
+/* ==========================
+   DROPDOWN
+========================== */
+
+function populate(){
+let start=document.getElementById("start");
+let goal=document.getElementById("goal");
+
+for(let city in POS){
+start.innerHTML+=`<option>${city}</option>`;
+goal.innerHTML+=`<option>${city}</option>`;
+}
+}
+
+populate();
+draw();
+
+</script>
+
+</body>
+</html>

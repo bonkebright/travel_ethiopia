@@ -1,0 +1,9 @@
+source;share/travel_robot/hook/pythonpath.ps1
+source;share/travel_robot/hook/pythonpath.dsv
+source;share/travel_robot/hook/pythonpath.sh
+source;share/travel_robot/hook/ament_prefix_path.ps1
+source;share/travel_robot/hook/ament_prefix_path.dsv
+source;share/travel_robot/hook/ament_prefix_path.sh
+source;../../build/travel_robot/share/travel_robot/hook/pythonpath_develop.ps1
+source;../../build/travel_robot/share/travel_robot/hook/pythonpath_develop.dsv
+source;../../build/travel_robot/share/travel_robot/hook/pythonpath_develop.sh

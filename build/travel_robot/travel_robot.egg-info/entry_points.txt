@@ -1,0 +1,6 @@
+[console_scripts]
+obstacle_avoidance = travel_robot.obstacle_avoidance:main
+path_follower = travel_robot.path_follower:main
+robot_planner = travel_robot.robot_planner:main
+sensor_fusion = travel_robot.sensor_fusion:main
+vision_navigation = travel_robot.vision_navigation:main
