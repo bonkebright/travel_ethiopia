@@ -7,6 +7,11 @@
 - **A\*** — Heuristic search for faster pathfinding
 - **MiniMax** — Adversarial search for coffee quality optimization
 
+### Run Search Algorithms
+```bash
+python3 -m main
+
+
 ## ROS 2 AI Search & Robot Navigation Simulation
 
 Travel Ethiopia is a ROS 2 Python package that integrates classical AI
